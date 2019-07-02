@@ -97,4 +97,4 @@ def create_training_test( n_training: int, n_test: int, s: int, noise: float ):
 
 
 if __name__ == '__main__':
-    create_training_test(1000, 100, 256, 0.0)
+    create_training_test(1000, 100, 256, 4.0)
