@@ -1,5 +1,3 @@
-
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -20,7 +18,7 @@ class ConvNet(nn.Module):
         # an affine operation: y = Wx + b
         self.fc1 = nn.Linear(59536, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 2)
+        self.fc3 = nn.Linear(84, 3)
 
     def forward(self, x):
 
@@ -44,7 +42,7 @@ class ConvNet(nn.Module):
 
 def do_label_matrix(l):
     n = l.shape[0]
-    mat = torch.zeros(n, 2)
+    mat = torch.zeros(n, 3)
     for i in range(n):
         label = l[i]
         mat[i,label] = 1.0
@@ -110,8 +108,8 @@ for epoch in range(10000):
         optimizer.step()
 
         running_loss += loss.item()
-        if i % 20 == 19:
-            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 20))
+        if i % 10 == 9:
+            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 10))
             running_loss = 0.0
 
 
@@ -131,6 +129,7 @@ for epoch in range(10000):
             for c in range(corrList.shape[0]):
                 if not corrList[c]:
                     wrongImgList.append(images[c])
+                    print( "Wrong class %d: out signal %s" % (labels[c], str(out[c])))
 
     runningtime = time.time() - start
     print('Accuracy of the network on test images: %.2f  (%d,  %d)%%   -  time: %.1f ' % (
