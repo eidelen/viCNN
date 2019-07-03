@@ -1,53 +1,42 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-import torchvision
 from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
-import numpy as np
 import torch.optim as optim
 import torch.nn.functional as F
 import time
+from shabel.Misc import *
 
 
 class ConvNet(nn.Module):
+    """Convolutional neural network - 2 conv layer, 3 fully connected"""
+
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 12, 5)
-        self.conv2 = nn.Conv2d(12, 16, 5)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(59536, 120)
+        self.conv1 = nn.Conv2d(1, 32, 5)
+        self.conv2 = nn.Conv2d(32, 64, 5)
+        self.fc1 = nn.Linear(238144, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 3)
 
     def forward(self, x):
-
-        # Max pooling over a (2, 2) window
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        # If the size is a square you can only specify a single number
         x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
+        x = x.view(-1, self.num_flat_features(x)) # to vector form
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
 
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
+    def num_flat_features(self, x) -> int:
+        """ Compute the number of remaining image pixels for one sample.
+            Note: Code was taken out from a pytorch example
+        """
+        size = x.size()[1:]  # compute the number of remaining image pixels for one sample
         num_features = 1
         for s in size:
             num_features *= s
         return num_features
-
-
-def do_label_matrix(l):
-    n = l.shape[0]
-    mat = torch.zeros(n, 3)
-    for i in range(n):
-        label = l[i]
-        mat[i,label] = 1.0
-
-    return mat;
 
 
 def showMultipleImages(imgs):
@@ -82,6 +71,8 @@ for cl in trainingset.classes:
     idx = trainingset.class_to_idx[cl]
     print("Class %s as idx %d" % (cl, idx))
 
+n_classes = len(trainingset.classes)
+
 
 # training
 net = ConvNet()
@@ -97,7 +88,7 @@ for epoch in range(10000):
 
     for i, batch in enumerate(trainingset_loader,0):
         x, y = batch
-        y = do_label_matrix(y).to(device)
+        y = do_label_matrix(y,n_classes).to(device)
 
         optimizer.zero_grad()
         out = net(x.to(device))
@@ -108,8 +99,8 @@ for epoch in range(10000):
         optimizer.step()
 
         running_loss += loss.item()
-        if i % 10 == 9:
-            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 10))
+        if i % 100 == 99:
+            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 100))
             running_loss = 0.0
 
 
