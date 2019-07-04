@@ -12,8 +12,8 @@ class ConvNet(nn.Module):
 
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 5)
-        self.conv2 = nn.Conv2d(32, 64, 5)
+        self.conv1 = nn.Conv2d(1, 256, 5)
+        self.conv2 = nn.Conv2d(256, 64, 5)
         self.fc1 = nn.Linear(238144, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 3)
@@ -70,18 +70,23 @@ def do_label_matrix(l: torch.Tensor, nc: int) -> torch.Tensor:
 
 
 print("pyTorch version" + torch.__version__)
-print( 'Cuda is' + (' on' if torch.cuda.is_available() else ' off'))
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = ""
+if torch.cuda.is_available():
+    device = "cuda:0"
+    print( "Cuda is on. %d GPUs" % (torch.cuda.device_count()) )
+else:
+    device = "cpu"
+    print( "No Cuda" )
 print("Use computational device: %s" % device)
 
 # load data
 data_transform = transforms.Compose([transforms.Grayscale(num_output_channels=1), transforms.ToTensor(), transforms.Normalize((0.5,), (0.5, )) ])
 
 trainingset = datasets.ImageFolder(root='training', transform=data_transform)
-trainingset_loader = torch.utils.data.DataLoader(trainingset,batch_size=10, shuffle=True,num_workers=0)
+trainingset_loader = torch.utils.data.DataLoader(trainingset,batch_size=32, shuffle=True,num_workers=8)
 
 testset = datasets.ImageFolder(root='test', transform=data_transform)
-testset_loader = torch.utils.data.DataLoader(testset,batch_size=4, shuffle=False,num_workers=0)
+testset_loader = torch.utils.data.DataLoader(testset,batch_size=16, shuffle=False,num_workers=8)
 
 for cl in trainingset.classes:
     idx = trainingset.class_to_idx[cl]
@@ -92,6 +97,10 @@ n_classes = len(trainingset.classes)
 
 # training
 net = ConvNet()
+
+if torch.cuda.device_count() > 1 and False: #GPU parallelisation
+    net = nn.DataParallel(net.cuda())
+
 net.to(device)
 criterion = nn.MSELoss()
 optimizer = optim.SGD(net.parameters(), lr=0.005, momentum=0.5)
