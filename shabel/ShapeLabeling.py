@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import torch.optim as optim
 import torch.nn.functional as F
 import time
-from shabel.ResNeXt import CifarResNeXt
+from ResNeXt import CifarResNeXt
 
 
 class ConvNet(nn.Module):
