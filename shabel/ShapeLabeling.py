@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import torch.optim as optim
 import torch.nn.functional as F
 import time
+from shabel.ResNeXt import CifarResNeXt
 
 
 class ConvNet(nn.Module):
@@ -96,8 +97,8 @@ n_classes = len(trainingset.classes)
 
 
 # training
-net = ConvNet()
-
+#net = ConvNet()
+net = CifarResNeXt(32,29,3,64,8)
 if torch.cuda.device_count() > 1 and False: #GPU parallelisation
     net = nn.DataParallel(net.cuda())
 
@@ -124,8 +125,8 @@ for epoch in range(10000):
         optimizer.step()
 
         running_loss += loss.item()
-        if i % 100 == 99:
-            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 100))
+        if i % 10 == 9:
+            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss / 10))
             running_loss = 0.0
 
 
