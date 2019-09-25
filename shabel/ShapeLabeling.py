@@ -136,17 +136,14 @@ def do_training(learning_rate: float, batch_size: int, gui: False, nbr_epochs: i
 
 
 
-def find_hypers():
+def find_hypers(lrs, bss, epochs):
     Misc.print_torch_info()
-
-    lrs = [0.015]
-    bss  = [3]
 
     best_hypers = (0.0, 0.0, 0.0)
 
     for lr, bs in [(i, j) for i in lrs for j in bss]:
         print("CHECK HYPER (%.4f, %.4f)" % (lr, bs))
-        performance = do_training(learning_rate=lr, batch_size=bs, gui=False, nbr_epochs=300)
+        performance = do_training(learning_rate=lr, batch_size=bs, gui=False, nbr_epochs=epochs)
 
         if performance > best_hypers[0]:
             best_hypers = (performance, lr, bs)
@@ -158,6 +155,9 @@ def find_hypers():
 
 
 if __name__ == '__main__':
-    find_hypers()
+    lrs = [0.015]
+    bss = [3]
+
+    find_hypers(lrs, bss, 300)
 
 

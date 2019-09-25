@@ -8,11 +8,11 @@ class ConvNet(nn.Module):
 
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, 5)
-        self.conv2 = nn.Conv2d(16, 32, 5)
-        self.fc1 = nn.Linear(96800, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 3)
+        self.conv1 = nn.Conv2d(1, 8, 5)
+        self.conv2 = nn.Conv2d(8, 16, 5)
+        self.fc1 = nn.Linear(48400, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 3)
 
     def forward(self, x):
         x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
