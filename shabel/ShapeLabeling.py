@@ -77,7 +77,7 @@ def do_training(learning_rate: float, batch_size: int, gui: False, nbr_epochs: i
     n_classes = len(trainingset.classes)
 
     model_file_name = "conv.pt"
-    if False and os.path.isfile(model_file_name):
+    if os.path.isfile(model_file_name):
         net = torch.load(model_file_name)
         net.eval()
     else:
@@ -139,13 +139,14 @@ def do_training(learning_rate: float, batch_size: int, gui: False, nbr_epochs: i
 def find_hypers():
     Misc.print_torch_info()
 
-    lrs = [0.001, 0.01, 0.1]
-    bss  = [8, 16, 24, 32]
+    lrs = [0.015]
+    bss  = [3]
 
     best_hypers = (0.0, 0.0, 0.0)
 
     for lr, bs in [(i, j) for i in lrs for j in bss]:
-        performance = do_training(learning_rate=lr, batch_size=bs, gui=False, nbr_epochs=20)
+        print("CHECK HYPER (%.4f, %.4f)" % (lr, bs))
+        performance = do_training(learning_rate=lr, batch_size=bs, gui=False, nbr_epochs=300)
 
         if performance > best_hypers[0]:
             best_hypers = (performance, lr, bs)
