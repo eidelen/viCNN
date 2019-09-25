@@ -38,3 +38,19 @@ def show_multiple_images(images: List[torch.Tensor], nPerSide: int):
 
     plt.show(block=False)
     plt.pause(1)
+
+
+def print_torch_info():
+    """ Print information about torch. """
+    print("pytorch version " + torch.__version__)
+    if torch.cuda.is_available():
+        print("CUDA is on. %d GPUs available" % (torch.cuda.device_count()))
+    else:
+        print("No CUDA available")
+
+
+def get_torch_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda:0"
+    else:
+        return "cpu"

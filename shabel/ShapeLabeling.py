@@ -4,137 +4,159 @@ import torch
 import torch.nn as nn
 from torchvision import transforms, datasets
 import torch.optim as optim
-import torch.nn.functional as F
 import time
 import os
 
 import Misc
+import shabel.ShabelModel as ShabelM
 
 
-class ConvNet(nn.Module):
-    """Convolutional neural network - 2 conv layer, 3 fully connected"""
+def test_all_classes(data_loader: torch.utils.data.DataLoader, modelNet: nn.Module, torch_dev: str):
 
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 16, 5)
-        self.conv2 = nn.Conv2d(16, 32, 5)
-        self.fc1 = nn.Linear(96800, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 3)
+    data_set = data_loader.dataset
+    nbr_classes = len(data_set.classes)
 
-    def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        x = F.max_pool2d(F.relu(self.conv2(x)), (2,2))
-        x = x.view(-1, self.num_flat_features(x)) # to vector form
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-    def num_flat_features(self, x) -> int:
-        """ Compute the number of remaining image pixels for one sample.
-            Note: Code was taken out from a pytorch example
-        """
-        size = x.size()[1:]  # compute the number of remaining image pixels for one sample
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
-
-
-print("pytorch version " + torch.__version__)
-device = ""
-if torch.cuda.is_available():
-    device = "cuda:0"
-    print( "cuda is on. %d GPUs" % (torch.cuda.device_count()) )
-else:
-    device = "cpu"
-    print( "No cuda available" )
-print("Use computational device: %s" % device)
-
-# load data
-training_transform = transforms.Compose([transforms.Grayscale(num_output_channels=1),
-                                     transforms.RandomCrop(232),
-                                     transforms.RandomHorizontalFlip(),
-                                     transforms.ToTensor(),
-                                     transforms.Normalize((0.5,), (0.5, )) ])
-
-test_transform = transforms.Compose([transforms.Grayscale(num_output_channels=1),
-                                     transforms.Resize(232),
-                                     transforms.ToTensor(),
-                                     transforms.Normalize((0.5,), (0.5, )) ])
-
-
-trainingset = datasets.ImageFolder(root='training', transform=training_transform)
-trainingset_loader = torch.utils.data.DataLoader(trainingset,batch_size=9, shuffle=True,num_workers=8)
-
-testset = datasets.ImageFolder(root='test', transform=test_transform)
-testset_loader = torch.utils.data.DataLoader(testset,batch_size=9, shuffle=False,num_workers=8)
-
-for cl in trainingset.classes:
-    idx = trainingset.class_to_idx[cl]
-    print("Class %s as idx %d" % (cl, idx))
-
-n_classes = len(trainingset.classes)
-
-
-
-model_file_name = "conv.pt"
-if os.path.isfile(model_file_name):
-    net = torch.load(model_file_name)
-else:
-    net = ConvNet()
-
-
-net.to(device)
-criterion = nn.MSELoss()
-optimizer = optim.SGD(net.parameters(), lr=0.005, momentum=0.5)
-
-for epoch in range(10000):
-
-    running_loss = 0.0
-    start = time.time()
-
-    for i, batch in enumerate(trainingset_loader,0):
-        x, y = batch
-        y = Misc.do_label_matrix(y, n_classes).to(device)
-
-        optimizer.zero_grad()
-        out = net(x.to(device))
-
-        loss = criterion(out,y)
-
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-        if i % 5 == 4:
-            print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss/5))
-            running_loss = 0.0
-
-
-    # test with testdata
-    correct = 0
+    total_class = [0] * nbr_classes
+    total_class_correct = [0] * nbr_classes
+    total_correct = 0
     total = 0
-    wrongImgList = []
+    wrong_sample_list = []
+
+
     with torch.no_grad():
-        for data in testset_loader:
-            images, labels = data
-            out = net(images.to(device))
+        for data in data_loader:
+            img, label = data
+            out = modelNet(img.to(torch_dev))
             _, predicted = torch.max(out.data, 1)
-            total += labels.size(0)
-            corrList = (predicted == labels.to(device))
-            correct += corrList.sum().item()
+            total += label.size(0)
+            corrList = (predicted == label.to(torch_dev))
+            total_correct += corrList.sum().item()
+
             # copy wrong detected
             for c in range(corrList.shape[0]):
-                if not corrList[c]:
-                    wrongImgList.append(images[c])
-                    #print( "Wrong classification of %s as %s: out signal %s" %
-                    #       (trainingset.classes[labels[c]], trainingset.classes[predicted[c]], str(out[c])))
 
-    runningtime = time.time() - start
-    print('Network performance in eporch %d: %.2f  (%d,  %d)%%   -  time: %.1f ' % (epoch, 100 * correct / total , correct, total, runningtime))
+                cl_idx = label[c]
+                total_class[cl_idx] = total_class[cl_idx] + 1.0
 
-    Misc.show_multiple_images(wrongImgList, 3)
-    torch.save(net, model_file_name)
+                if corrList[c]:
+                    total_class_correct[cl_idx] = total_class_correct[cl_idx] + 1.0
+                else:
+                    wrong_sample_list.append(img[c])
+
+    return total, total_correct, wrong_sample_list, total_class, total_class_correct
+
+
+
+def do_training(learning_rate: float, batch_size: int, gui: False, nbr_epochs: int ):
+
+    device = Misc.get_torch_device()
+    print("Use computational device: %s" % device)
+
+    # load data & augmentation
+    training_transform = transforms.Compose([transforms.Grayscale(num_output_channels=1),
+                                         transforms.RandomCrop(232),
+                                         transforms.RandomHorizontalFlip(),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize((0.5,), (0.5, )) ])
+
+    test_transform = transforms.Compose([transforms.Grayscale(num_output_channels=1),
+                                         transforms.Resize(232),
+                                         transforms.ToTensor(),
+                                         transforms.Normalize((0.5,), (0.5, )) ])
+
+    trainingset = datasets.ImageFolder(root='training', transform=training_transform)
+    trainingset_loader = torch.utils.data.DataLoader(trainingset,batch_size=batch_size, shuffle=True,num_workers=8)
+
+    testset = datasets.ImageFolder(root='test', transform=test_transform)
+    testset_loader = torch.utils.data.DataLoader(testset,batch_size=1, shuffle=False,num_workers=1)
+
+    for cl in trainingset.classes:
+        idx = trainingset.class_to_idx[cl]
+        print("Class %s as idx %d" % (cl, idx))
+
+    n_classes = len(trainingset.classes)
+
+    model_file_name = "conv.pt"
+    if False and os.path.isfile(model_file_name):
+        net = torch.load(model_file_name)
+        net.eval()
+    else:
+        net = ShabelM.ConvNet()
+
+
+    net.to(device)
+    criterion = nn.MSELoss()
+    optimizer = optim.SGD(net.parameters(), lr=learning_rate)
+
+    best_performance = 0.0
+    for epoch in range(nbr_epochs):
+
+        running_loss = 0.0
+        start = time.time()
+
+        for i, batch in enumerate(trainingset_loader,0):
+            x, y = batch
+            y = Misc.do_label_matrix(y, n_classes).to(device)
+
+            optimizer.zero_grad()
+            out = net(x.to(device))
+
+            loss = criterion(out,y)
+
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            if i % 15 ==14:
+                print('[%d, %5d] loss: %.8f' % (epoch + 1, i + 1, running_loss/15))
+                running_loss = 0.0
+
+
+        # test with testdata
+        total, correct, wrong_img_list, total_class, total_class_correct = test_all_classes(testset_loader, net, device)
+        performance = 100.0 * correct / total
+
+        if best_performance < performance:
+            best_performance = performance
+
+        if gui:
+            Misc.show_multiple_images(wrong_img_list, 3)
+
+        runningtime = time.time() - start
+        print('Network performance in epoch %d: %.2f  (%d,  %d)%%   -  time: %.1f ' % (epoch, performance, correct, total, runningtime))
+        for cl_idx in range(len(total_class)):
+            cl_name = testset.classes[cl_idx]
+            cl_performance = 100.0 * total_class_correct[cl_idx] / total_class[cl_idx]
+            print('%s: %.2f (%d, %d)' % (cl_name, cl_performance, total_class_correct[cl_idx], total_class[cl_idx]) )
+
+        torch.save(net, model_file_name)
+
+
+    return best_performance
+
+
+
+def find_hypers():
+    Misc.print_torch_info()
+
+    lrs = [0.001, 0.01, 0.1]
+    bss  = [8, 16, 24, 32]
+
+    best_hypers = (0.0, 0.0, 0.0)
+
+    for lr, bs in [(i, j) for i in lrs for j in bss]:
+        performance = do_training(learning_rate=lr, batch_size=bs, gui=False, nbr_epochs=20)
+
+        if performance > best_hypers[0]:
+            best_hypers = (performance, lr, bs)
+
+        print("PERFORMANCE %.2f (%4f, %4f)" % (performance, lr, bs))
+
+    print("Best Hpyerparams -> ", best_hypers)
+
+
+
+if __name__ == '__main__':
+    find_hypers()
+
 
