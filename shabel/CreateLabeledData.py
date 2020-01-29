@@ -74,6 +74,12 @@ def add_gaussian_noise(img: Image, var: float) -> Image:
     return Image.fromarray( noise_img.astype(np.uint8) )
 
 
+def get_segmetation(img: Image) -> np.ndarray:
+    seg = np.array(img)
+    seg[ seg > 0 ] = 1
+    return seg
+
+
 def create_training_test( n_training: int, n_test: int, s: int, noise: float ):
     """
     Creates training and test data for artificial squares and circles. The files are saved under
@@ -94,10 +100,14 @@ def create_training_test( n_training: int, n_test: int, s: int, noise: float ):
     os.makedirs(sq_test)
     for i in range(0, n_training):
         img = get_random_square(s)
+        seg = get_segmetation(img)
+        np.save(sq_training + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(sq_training + str(i) +".png")
     for i in range(0, n_test):
         img = get_random_square(s)
+        seg = get_segmetation(img)
+        np.save(sq_test + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(sq_test + str(i) +".png")
 
@@ -107,10 +117,14 @@ def create_training_test( n_training: int, n_test: int, s: int, noise: float ):
     os.makedirs(circ_test)
     for i in range(0, n_training):
         img = get_random_circle(s)
+        seg = get_segmetation(img)
+        np.save(circ_training + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(circ_training + str(i) + ".png")
     for i in range(0, n_test):
         img = get_random_circle(s)
+        seg = get_segmetation(img)
+        np.save(circ_test + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(circ_test + str(i) + ".png")
 
@@ -120,13 +134,17 @@ def create_training_test( n_training: int, n_test: int, s: int, noise: float ):
     os.makedirs(cross_test)
     for i in range(0, n_training):
         img = get_random_cross(s)
+        seg = get_segmetation(img)
+        np.save(cross_training + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(cross_training + str(i) + ".png")
     for i in range(0, n_test):
         img = get_random_cross(s)
+        seg = get_segmetation(img)
+        np.save(cross_test + str(i) + ".npy", seg)
         n_img = add_gaussian_noise(img=img, var=noise)
         n_img.save(cross_test + str(i) + ".png")
 
 
 if __name__ == '__main__':
-    create_training_test(160, 40, 256, 8.0)
+    create_training_test(10, 5, 128, 8.0)
