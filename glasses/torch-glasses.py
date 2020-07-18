@@ -102,15 +102,15 @@ if __name__ == '__main__':
 
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
-    batch_size = 4
-    num_epochs = 20
+    batch_size = 8
+    num_epochs = 40
 
     image_input_size = 224
 
     data_transforms = {
     # Data augmentation and normalization for training
         'train': transforms.Compose([
-            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.0)),
+            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.2), ratio=(0.8, 1.2)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -123,12 +123,12 @@ if __name__ == '__main__':
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ]),
         'show': transforms.Compose([
-            transforms.Resize(image_input_size),
-            transforms.CenterCrop(image_input_size)
+            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.2),ratio=(0.8, 1.2) ),
+            transforms.RandomHorizontalFlip()
         ]),
     }
 
-    #show_set =  GlassesVottDataSet(csv_file='validationData/vott-csv-export/Glasses-export.csv', transform=data_transforms['show'])
+    #show_set =  GlassesVottDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['show'])
     #show_all_samples(show_set)
 
     # load training and validation data set
