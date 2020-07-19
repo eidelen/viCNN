@@ -98,12 +98,13 @@ def set_parameter_requires_grad(model, feature_extracting):
 if __name__ == '__main__':
     print("PyTorch Version: ", torch.__version__)
     print("Torchvision Version: ", torchvision.__version__)
+    res_model_path = 'resnet_pytorch.pt'
 
 
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
-    batch_size = 8
-    num_epochs = 40
+    batch_size = 12
+    num_epochs = 10
 
     image_input_size = 224
 
@@ -133,18 +134,27 @@ if __name__ == '__main__':
 
     # load training and validation data set
     training_set = GlassesVottDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['train'])
+    print("Number of training samples: %d" % (len(training_set)))
     validation_set = GlassesVottDataSet(csv_file='labeling/validationData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['val'])
+    print("Number of validation samples: %d" % (len(validation_set)))
     num_classes = training_set.num_classes
     dataloaders = {'train': torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4),
                         'val': torch.utils.data.DataLoader(validation_set, batch_size=batch_size, shuffle=True, num_workers=4)}
 
-    # load pretrained resnet model
-    model_ft = models.resnet18(pretrained=use_pretrained_model)
-    # important to call this function before modifying the classification layer
-    set_parameter_requires_grad(model_ft, do_only_feature_extraction)
-    # replace classifier layer in the very end. instead of 1000 classes, we have just 2
-    num_ftrs = model_ft.fc.in_features
-    model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    # load existing model if available, otherwise make it from scratch
+    if os.path.isfile(res_model_path):
+        print("Load existing model: %s" % (res_model_path))
+        model_ft = torch.load(res_model_path)
+        model_ft.eval()
+    else:
+        # load pretrained resnet model
+        print("Create model from scratch")
+        model_ft = models.resnet18(pretrained=use_pretrained_model)
+        # important to call this function before modifying the classification layer
+        set_parameter_requires_grad(model_ft, do_only_feature_extraction)
+        # replace classifier layer in the very end. instead of 1000 classes, we have just 2
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs, num_classes)
 
     # detect if we have a GPU available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -166,7 +176,7 @@ if __name__ == '__main__':
                 print("\t", name)
 
 
-    optimizer = optim.SGD(params_to_update, lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(params_to_update, lr=0.0005, momentum=0.9)
     criterion = nn.CrossEntropyLoss()
 
 
@@ -239,7 +249,6 @@ if __name__ == '__main__':
 
     # load best model weights
     model_ft.load_state_dict(best_model_wts)
-
-
-
-
+    print("Saving model: %s" % (res_model_path))
+    torch.save(model_ft, res_model_path)
+    print("Saving done")
