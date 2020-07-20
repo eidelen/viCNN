@@ -21,6 +21,8 @@ import csv
 from pathlib import Path
 from skimage import io, transform
 from PIL import Image
+import pickle
+import cv2
 
 plt.ion()  # interactive mode
 
@@ -48,6 +50,11 @@ if __name__ == '__main__':
     print("Computation device: %s" % (device))
 
     res_model_path = 'resnet_pytorch.pt'
+    class_file_path = 'classes.txt'
+
+    # load classes (idx, strings)
+    with open(class_file_path, "rb") as fp:
+        classes = pickle.load(fp)
 
     # image input transformation
     t = transforms.Compose([
@@ -71,7 +78,28 @@ if __name__ == '__main__':
 
     # classification
     prediction = model_ft(image_t)
+    class_idx = (torch.max(prediction, 1)[1]).data.cpu().numpy()[0]
+    class_str = classes[class_idx][1]
+    print(class_str)
 
-    print(prediction)
-    print(torch.max(prediction))
-    print(torch.max(prediction, 1)[1])
+    cap = cv2.VideoCapture(0)
+
+    while (True):
+        ret, frame = cap.read()
+
+        pil_image = Image.fromarray(frame)
+        image_t = t(pil_image).unsqueeze_(0)
+        image_t = image_t.to(device)
+
+        prediction = model_ft(image_t)
+        class_idx = (torch.max(prediction, 1)[1]).data.cpu().numpy()[0]
+        class_str = classes[class_idx][1]
+        print(class_str)
+
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # When everything done, release the capture
+    cap.release()
+    cv2.destroyAllWindows()

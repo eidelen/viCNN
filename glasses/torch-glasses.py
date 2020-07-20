@@ -17,125 +17,34 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-import csv
-from pathlib import Path
-from skimage import io, transform
-from PIL import Image
+import pickle
+
+from CommonTorchGlasses import VottImageClassDataSet, get_evaluation_transform, get_training_transform
 
 plt.ion()   # interactive mode
-
-
-class GlassesVottDataSet(Dataset):
-    """Glasses dataset from VOTT labeling tool."""
-
-    def __init__(self, csv_file, transform=None):
-        """
-        Dataset representing the glasses labeled by the VOTT labeling software
-        @param csv_file: Path to csv file
-        @param transform: Optional transform
-        """
-        self.transform = transform
-        self.label_file_list = []
-        label_list = []
-        parent_dir = Path(csv_file).parent.absolute()
-        with open(csv_file, newline='') as csvfile:
-            labeling_input = csv.reader(csvfile, delimiter=',', quotechar='|')
-            labeling_input_iter = iter(labeling_input)
-            next(labeling_input_iter)
-            for row in labeling_input_iter:
-                file_name = (row[0])[1:-1]
-                file_path_abs = str(parent_dir / file_name)
-                text_label = (row[5])[1:-1]
-
-                if text_label not in label_list:
-                    label_list.append(text_label)
-                num_label = label_list.index(text_label)
-
-                self.label_file_list.append((num_label, text_label, file_path_abs))
-        self.num_classes = len(label_list)
-
-    def __len__(self):
-        return len(self.label_file_list)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        img_file_path = self.label_file_list[idx][2]
-        image = Image.open(img_file_path)
-
-        class_id = self.label_file_list[idx][0]
-        label_vect = np.zeros((self.num_classes))
-        label_vect[class_id] = 1
-        label_vect = label_vect.astype('long')
-
-        # label does not require any transformation.
-        if self.transform:
-            image = self.transform(image)
-
-        sample = {'image': image, 'label': label_vect}
-
-        return sample
-
-def show_sample(image, label):
-    plt.imshow(image)
-    print(label)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-def show_all_samples(dataset):
-    fig = plt.figure()
-    for i in range(len(dataset)):
-        sample = dataset[i]
-        show_sample(**sample)
-        plt.show()
 
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
         for param in model.parameters():
             param.requires_grad = False # we dont want feature extraction layers to learn
 
-
 if __name__ == '__main__':
     print("PyTorch Version: ", torch.__version__)
     print("Torchvision Version: ", torchvision.__version__)
     res_model_path = 'resnet_pytorch.pt'
-
+    class_file_path = 'classes.txt'
 
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
     batch_size = 12
-    num_epochs = 3
+    num_epochs = 1
 
     image_input_size = 224
 
-    data_transforms = {
-    # Data augmentation and normalization for training
-        'train': transforms.Compose([
-            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.2), ratio=(0.8, 1.2)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-    # Just normalization for validation
-        'val': transforms.Compose([
-            transforms.Resize(image_input_size),
-            transforms.CenterCrop(image_input_size),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ]),
-        'show': transforms.Compose([
-            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.2),ratio=(0.8, 1.2) ),
-            transforms.RandomHorizontalFlip()
-        ]),
-    }
-
-    #show_set =  GlassesVottDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['show'])
-    #show_all_samples(show_set)
-
     # load training and validation data set
-    training_set = GlassesVottDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['train'])
+    training_set = VottImageClassDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=get_training_transform(image_input_size))
     print("Number of training samples: %d" % (len(training_set)))
-    validation_set = GlassesVottDataSet(csv_file='labeling/validationData/vott-csv-export/glasses_training-export.csv', transform=data_transforms['val'])
+    validation_set = VottImageClassDataSet(csv_file='labeling/validationData/vott-csv-export/glasses_training-export.csv', transform=get_evaluation_transform(image_input_size))
     print("Number of validation samples: %d" % (len(validation_set)))
     num_classes = training_set.num_classes
     dataloaders = {'train': torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4),
@@ -250,4 +159,6 @@ if __name__ == '__main__':
     model_ft.load_state_dict(best_model_wts)
     print("Saving model: %s" % (res_model_path))
     torch.save(model_ft, res_model_path)
-    print("Saving done")
+    print("Saving classes: %s" % (class_file_path))
+    with open(class_file_path, "wb") as fp:
+        pickle.dump(training_set.get_classes(), fp)
