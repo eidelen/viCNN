@@ -86,7 +86,8 @@ def get_training_transform(image_input_size):
     @return: tensor ready to enter neural network
     """
     return transforms.Compose([
-            transforms.RandomResizedCrop(image_input_size, scale=(0.8, 1.2), ratio=(0.8, 1.2)),
+            transforms.RandomResizedCrop(image_input_size, scale=(0.9, 1.1), ratio=(0.9, 1.1)),
+            transforms.RandomRotation((-3,3)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])

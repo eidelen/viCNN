@@ -82,7 +82,7 @@ if __name__ == '__main__':
     class_str = classes[class_idx][1]
     print(class_str)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('labeling/input/basel_adi_noglasses.mov')
 
     while (True):
         ret, frame = cap.read()
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         prediction = model_ft(image_t)
         class_idx = (torch.max(prediction, 1)[1]).data.cpu().numpy()[0]
         class_str = classes[class_idx][1]
-        print(class_str)
+        print(class_str, prediction)
 
         cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
