@@ -104,7 +104,7 @@ if __name__ == '__main__':
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
     batch_size = 12
-    num_epochs = 10
+    num_epochs = 3
 
     image_input_size = 224
 
@@ -215,7 +215,6 @@ if __name__ == '__main__':
                     outputs = model_ft(inputs)
 
                     labels = torch.max(labels, 1)[1]
-
                     loss = criterion(outputs, labels)
 
                     _, preds = torch.max(outputs, 1)
