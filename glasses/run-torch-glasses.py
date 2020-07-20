@@ -82,8 +82,8 @@ if __name__ == '__main__':
     class_str = classes[class_idx][1]
     print(class_str)
 
-    cap = cv2.VideoCapture('labeling/input/basel_adi_noglasses.mov')
-
+    #cap = cv2.VideoCapture('labeling/input/basel_adi_noglasses.mov')
+    cap = cv2.VideoCapture(0)
     while (True):
         ret, frame = cap.read()
 

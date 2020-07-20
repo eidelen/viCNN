@@ -37,8 +37,8 @@ if __name__ == '__main__':
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
     batch_size = 16
-    num_epochs = 5
-    learning_rate = 0.0005
+    num_epochs = 30
+    learning_rate = 0.0003
 
     image_input_size = 224
 
