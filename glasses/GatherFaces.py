@@ -2,7 +2,7 @@ import cv2
 import time
 
 
-capture = cv2.VideoCapture('/Users/eidelen/dev/viCNN/glasses/data/input/raw01.mov')
+capture = cv2.VideoCapture('/Users/eidelen/dev/viCNN/glasses/data/input/nari_adi.mov')
 output_path = '/Users/eidelen/dev/viCNN/glasses/data/current/'
 
 face_cascade = cv2.CascadeClassifier('/Users/eidelen/dev/libs/opencv-3.2.0/data/haarcascades/haarcascade_frontalface_default.xml')

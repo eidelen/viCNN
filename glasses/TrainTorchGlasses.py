@@ -43,13 +43,25 @@ if __name__ == '__main__':
     image_input_size = 224
 
     # load training and validation data set
-    training_set = VottImageClassDataSet(csv_file='data/trainingData/vott-csv-export/glasses_training-export.csv', transform=get_training_transform(image_input_size))
-    print("Number of training samples: %d" % (len(training_set)))
-    validation_set = VottImageClassDataSet(csv_file='data/validationData/vott-csv-export/glasses_training-export.csv', transform=get_evaluation_transform(image_input_size))
-    print("Number of validation samples: %d" % (len(validation_set)))
-    num_classes = training_set.num_classes
-    dataloaders = {'train': torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4),
-                        'val': torch.utils.data.DataLoader(validation_set, batch_size=batch_size, shuffle=True, num_workers=4)}
+    training_set = datasets.ImageFolder(root='data/trainingData', transform=get_training_transform(image_input_size))
+    validation_set = datasets.ImageFolder(root='data/validationData', transform=get_evaluation_transform(image_input_size))
+    dataloaders = {'train': torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=0),
+                    'val': torch.utils.data.DataLoader(validation_set, batch_size=batch_size, shuffle=True, num_workers=0)}
+
+    # count samples per class
+    number_of_classes = len(training_set.classes)
+    training_count = torch.zeros(number_of_classes, dtype=torch.long)
+    validation_count = torch.zeros(number_of_classes, dtype=torch.long)
+    for _, target in training_set:
+        training_count += target
+    for _, target in validation_set:
+        validation_count += target
+    for cl in training_set.classes:
+        idx = training_set.class_to_idx[cl]
+        print("Training: Class %s as idx %d, n=%d" % (cl, idx,training_count[idx]))
+    for cl in validation_set.classes:
+        idx = validation_set.class_to_idx[cl]
+        print("Validation: Class %s as idx %d, n=%d" % (cl, idx, validation_count[idx]))
 
     # load existing model if available, otherwise make it from scratch
     if os.path.isfile(res_model_path):
@@ -64,7 +76,7 @@ if __name__ == '__main__':
         set_parameter_requires_grad(model_ft, do_only_feature_extraction)
         # replace classifier layer in the very end. instead of 1000 classes, we have just 2
         num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+        model_ft.fc = nn.Linear(num_ftrs, number_of_classes)
 
     # detect if we have a GPU available
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -112,9 +124,8 @@ if __name__ == '__main__':
             running_corrects = 0
 
             # accumulate over data
-            for a_batch in dataloaders[phase]:
-                inputs = a_batch['image']
-                labels = a_batch['label']
+            dl = dataloaders[phase]
+            for step, (inputs, labels) in enumerate(dl):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -124,7 +135,6 @@ if __name__ == '__main__':
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model_ft(inputs)
 
-                    labels = torch.max(labels, 1)[1]
                     loss = criterion(outputs, labels)
 
                     _, preds = torch.max(outputs, 1)
