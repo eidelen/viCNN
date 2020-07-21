@@ -43,9 +43,9 @@ if __name__ == '__main__':
     image_input_size = 224
 
     # load training and validation data set
-    training_set = VottImageClassDataSet(csv_file='labeling/trainingData/vott-csv-export/glasses_training-export.csv', transform=get_training_transform(image_input_size))
+    training_set = VottImageClassDataSet(csv_file='data/trainingData/vott-csv-export/glasses_training-export.csv', transform=get_training_transform(image_input_size))
     print("Number of training samples: %d" % (len(training_set)))
-    validation_set = VottImageClassDataSet(csv_file='labeling/validationData/vott-csv-export/glasses_training-export.csv', transform=get_evaluation_transform(image_input_size))
+    validation_set = VottImageClassDataSet(csv_file='data/validationData/vott-csv-export/glasses_training-export.csv', transform=get_evaluation_transform(image_input_size))
     print("Number of validation samples: %d" % (len(validation_set)))
     num_classes = training_set.num_classes
     dataloaders = {'train': torch.utils.data.DataLoader(training_set, batch_size=batch_size, shuffle=True, num_workers=4),

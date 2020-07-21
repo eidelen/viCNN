@@ -65,7 +65,7 @@ if __name__ == '__main__':
     ])
 
     # load image
-    path_to_test_image = 'labeling/validationData/vott-csv-export/glasses_on_1.mov#t=2.2.jpg'
+    path_to_test_image = 'data/validationData/vott-csv-export/glasses_on_1.mov#t=2.2.jpg'
     image = Image.open(path_to_test_image)
     image_t = t(image).unsqueeze_(0)
     image_t = image_t.to(device)
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     class_str = classes[class_idx][1]
     print(class_str)
 
-    #cap = cv2.VideoCapture('labeling/input/basel_adi_noglasses.mov')
+    #cap = cv2.VideoCapture('data/input/basel_adi_noglasses.mov')
     cap = cv2.VideoCapture(0)
     while (True):
         ret, frame = cap.read()

@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 from typing import List, Tuple
 
 class VottImageClassDataSet(Dataset):
-    """Image / 1 class label dataset labeled with VOTT labeling tool (exported as CSV)."""
+    """Image / 1 class label dataset labeled with VOTT data tool (exported as CSV)."""
 
     def __init__(self, csv_file, transform=None):
         """
-        Dataset labeled by the VOTT labeling software
+        Dataset labeled by the VOTT data software
         @param csv_file: Path to csv file
         @param transform: Optional transform
         """
