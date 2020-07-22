@@ -37,7 +37,7 @@ if __name__ == '__main__':
     use_pretrained_model = True
     do_only_feature_extraction = True # we dont want the front part of the network to change
     batch_size = 16
-    num_epochs = 30
+    num_epochs = 20
     learning_rate = 0.0003
 
     image_input_size = 224
@@ -62,6 +62,11 @@ if __name__ == '__main__':
     for cl in validation_set.classes:
         idx = validation_set.class_to_idx[cl]
         print("Validation: Class %s as idx %d, n=%d" % (cl, idx, validation_count[idx]))
+
+    print("Saving classes and indices: %s" % (class_file_path))
+    with open(class_file_path, "wb") as fp:
+        class_items = [(training_set.class_to_idx[cl], cl) for cl in training_set.classes]
+        pickle.dump(class_items, fp)
 
     # load existing model if available, otherwise make it from scratch
     if os.path.isfile(res_model_path):
@@ -170,6 +175,4 @@ if __name__ == '__main__':
     model_ft.load_state_dict(best_model_wts)
     print("Saving model: %s" % (res_model_path))
     torch.save(model_ft, res_model_path)
-    print("Saving classes: %s" % (class_file_path))
-    with open(class_file_path, "wb") as fp:
-        pickle.dump(training_set.get_classes(), fp)
+
