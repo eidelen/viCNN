@@ -35,10 +35,10 @@ if __name__ == '__main__':
     class_file_path = 'classes.txt'
 
     use_pretrained_model = True
-    do_only_feature_extraction = True # we dont want the front part of the network to change
-    batch_size = 16
+    do_only_feature_extraction = False # we dont want the front part of the network to change
+    batch_size = 8
     num_epochs = 20
-    learning_rate = 0.0003
+    learning_rate = 0.0006
 
     image_input_size = 224
 

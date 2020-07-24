@@ -10,8 +10,10 @@ face_cascade = cv2.CascadeClassifier('/Users/eidelen/dev/libs/opencv-3.2.0/data/
 eyes_cascade = cv2.CascadeClassifier('/Users/eidelen/dev/libs/opencv-3.2.0/data/haarcascades/haarcascade_eye.xml')
 
 addFaceToFile = False
+fixRect = False
 count = 0
 eyeDistList = []
+x, y, w, h = 0, 0, 5, 5
 
 while(True):
 
@@ -20,9 +22,10 @@ while(True):
 
     # find face
     faces = face_cascade.detectMultiScale(gray, 1.1, 5)
-    if len(faces) > 0:
+    if len(faces) > 0 or fixRect:
 
-        [x, y, w, h] = faces[0]
+        if not fixRect:
+            [x, y, w, h] = faces[0] # update the rect pos with the current face
 
         if addFaceToFile:
             # save face image
@@ -45,6 +48,8 @@ while(True):
         break;
     if keyCode == ord('a'):
         addFaceToFile = not addFaceToFile
+    if keyCode == ord('f'):
+        fixRect = not fixRect
 
 capture.release()
 cv2.destroyAllWindows()
