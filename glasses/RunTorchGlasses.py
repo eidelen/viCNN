@@ -23,6 +23,7 @@ from skimage import io, transform
 from PIL import Image
 import pickle
 import cv2
+import pafy
 
 plt.ion()  # interactive mode
 
@@ -74,9 +75,16 @@ if __name__ == '__main__':
     face_cascade = cv2.CascadeClassifier(
         '/Users/eidelen/dev/libs/opencv-3.2.0/data/haarcascades/haarcascade_frontalface_default.xml')
 
-    cap = cv2.VideoCapture(0)
+    url = 'https://www.youtube.com/watch?v=ZJPQBBIWBl8'
+    vPafy = pafy.new(url)
+    play = vPafy.getbestvideo(preftype="webm")
+    cap = cv2.VideoCapture(play.url)
+
+    #cap = cv2.VideoCapture(0)
     while (True):
         ret, frame = cap.read()
+        if not ret:
+            continue
 
         # find faces
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
