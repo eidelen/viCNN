@@ -19,7 +19,7 @@ import os
 import copy
 import pickle
 
-from CommonTorchGlasses import VottImageClassDataSet, get_evaluation_transform, get_training_transform
+from CommonTorchGlasses import get_evaluation_transform, get_training_transform
 
 plt.ion()   # interactive mode
 
@@ -35,9 +35,9 @@ if __name__ == '__main__':
     class_file_path = 'classes.txt'
 
     use_pretrained_model = True
-    do_only_feature_extraction = False # we dont want the front part of the network to change
+    do_only_feature_extraction = False # if false, each layer of the CNN is adapting
     batch_size = 8
-    num_epochs = 20
+    num_epochs = 3
     learning_rate = 0.0006
 
     image_input_size = 224

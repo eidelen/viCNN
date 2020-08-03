@@ -1,46 +1,21 @@
 """
+This module loads a pytorch model, reads video input frame by frame (OpenCV),
+transforms the images into a pytorch tensor and uses the model to label if
+someone wears glasses or not.
+
 This code was inspired by
-https://pytorch.org/tutorials/beginner/finetuning_torchvision_models_tutorial.html
 https://pytorch.org/tutorials/beginner/data_loading_tutorial.html
 """
 
 from __future__ import print_function
 from __future__ import division
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset
-import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
-import time
-import os
-import copy
-import csv
-from pathlib import Path
-from skimage import io, transform
 from PIL import Image
 import pickle
 import cv2
-import pafy
-
-plt.ion()  # interactive mode
-
-
-def show_sample(image, label):
-    plt.imshow(image)
-    print(label)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-def show_all_samples(dataset):
-    fig = plt.figure()
-    for i in range(len(dataset)):
-        sample = dataset[i]
-        show_sample(**sample)
-        plt.show()
-
+from CommonTorchGlasses import CvFaceCapture, get_evaluation_transform
 
 if __name__ == '__main__':
     print("PyTorch Version: ", torch.__version__)
@@ -57,41 +32,26 @@ if __name__ == '__main__':
     with open(class_file_path, "rb") as fp:
         classes = pickle.load(fp)
 
-    # image input transformation
-    t = transforms.Compose([
-        transforms.Resize(224),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-
-
     # load model
     print("Load model: %s" % (res_model_path))
     model_ft = torch.load(res_model_path)
     model_ft.eval()
     model_ft = model_ft.to(device)
 
-    face_cascade = cv2.CascadeClassifier(
-        '/Users/eidelen/dev/libs/opencv-3.2.0/data/haarcascades/haarcascade_frontalface_default.xml')
+    # load torch image transformation
+    t = get_evaluation_transform(224)
 
-    url = 'https://www.youtube.com/watch?v=ZJPQBBIWBl8'
-    vPafy = pafy.new(url)
-    play = vPafy.getbestvideo(preftype="webm")
-    cap = cv2.VideoCapture(play.url)
+    # create the frame face capture
+    cv_cap = cv2.VideoCapture(0)
+    cap = CvFaceCapture(cv_cap)
 
-    #cap = cv2.VideoCapture(0)
     while (True):
-        ret, frame = cap.read()
-        if not ret:
-            continue
-
-        # find faces
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.1, 5)
+        frame, faces = cap.read()
         for i in range(0, len(faces)):
             [x, y, w, h] = faces[i]
             face = frame[y:y + h, x:x + w]
+
+            # transform opencv image into torch tensor
             pil_image = Image.fromarray(face)
             image_t = t(pil_image).unsqueeze_(0)
             image_t = image_t.to(device)
@@ -112,7 +72,5 @@ if __name__ == '__main__':
         if keyCode == ord('q'):
             break;
 
-
-    # When everything done, release the capture
-    cap.release()
+    cv_cap.release()
     cv2.destroyAllWindows()

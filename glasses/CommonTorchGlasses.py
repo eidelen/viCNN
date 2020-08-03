@@ -1,83 +1,8 @@
 from __future__ import print_function
 from __future__ import division
-import torch
-from torch.utils.data import Dataset
 from torchvision import datasets, models, transforms
-import numpy as np
-import csv
-from pathlib import Path
-from PIL import Image
-from PIL import Image
 import matplotlib.pyplot as plt
-from typing import List, Tuple
-
-class VottImageClassDataSet(Dataset):
-    """Image / 1 class label dataset labeled with VOTT data tool (exported as CSV)."""
-
-    def __init__(self, csv_file, transform=None):
-        """
-        Dataset labeled by the VOTT data software
-        @param csv_file: Path to csv file
-        @param transform: Optional transform
-        """
-        self.transform = transform
-        path_label = []
-        self.label_list = []
-        parent_dir = Path(csv_file).parent.absolute()
-
-        with open(csv_file, newline='') as csvfile:
-            labeling_input = csv.reader(csvfile, delimiter=',', quotechar='|')
-            labeling_input_iter = iter(labeling_input)
-            next(labeling_input_iter)
-            for row in labeling_input_iter:
-                file_name = (row[0])[1:-1]
-                file_path_abs = str(parent_dir / file_name)
-                text_label = (row[5])[1:-1]
-
-                if text_label not in self.label_list:
-                    self.label_list.append(text_label)
-                path_label.append((text_label, file_path_abs))
-
-        # set a label index
-        self.label_list.sort()
-        self.label_file_list = []
-        for class_text, file_path in path_label:
-            class_idx = self.label_list.index(class_text)
-            self.label_file_list.append( (class_idx, class_text, file_path) )
-
-        self.num_classes = len(self.label_list)
-
-    def __len__(self) -> int:
-        return len(self.label_file_list)
-
-    def get_classes(self) -> List[Tuple[int, str]]:
-        """
-        Returns the list of classes and their indices. The list
-        is created during parsing of cvs file.
-        @return: list of label classes
-        """
-        return [(i, self.label_list[i]) for i in range(0, len(self.label_list))]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        img_file_path = self.label_file_list[idx][2]
-        image = Image.open(img_file_path)
-
-        class_id = self.label_file_list[idx][0]
-        label_vect = np.zeros((self.num_classes))
-        label_vect[class_id] = 1
-        label_vect = label_vect.astype('long')
-
-        # label does not require any transformation.
-        if self.transform:
-            image = self.transform(image)
-
-        sample = {'image': image, 'label': label_vect}
-
-        return sample
-
+import cv2
 
 def get_training_transform(image_input_size):
     """
@@ -115,8 +40,28 @@ def show_sample(image, label):
 
 
 def show_all_samples(dataset):
-    fig = plt.figure()
+    _ = plt.figure()
     for i in range(len(dataset)):
         sample = dataset[i]
         show_sample(**sample)
         plt.show()
+
+
+class CvFaceCapture:
+    """ This class detects faces in an video stream by using opencv. """
+
+    def __init__(self, capture):
+        """
+        @param capture: Open cv video capture object
+        """
+        self.face_detector = cv2.CascadeClassifier(
+            '/Users/eidelen/dev/libs/opencv-3.2.0/data/haarcascades/haarcascade_frontalface_default.xml')
+        self.capture = capture
+
+    def read(self):
+        """ Reads the next video frame and detects the faces on it. """
+        ret, frame = self.capture.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = self.face_detector.detectMultiScale(gray, 1.1, 5)
+        return frame, faces
+
