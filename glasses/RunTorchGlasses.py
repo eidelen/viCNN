@@ -15,7 +15,8 @@ from torchvision import datasets, models, transforms
 from PIL import Image
 import pickle
 import cv2
-from CommonTorchGlasses import CvFaceCapture, get_evaluation_transform
+from CommonTorchGlasses import get_evaluation_transform, get_classes_file_path, get_model_path
+from CommonGlasses import CvFaceCapture
 
 if __name__ == '__main__':
     print("PyTorch Version: ", torch.__version__)
@@ -25,16 +26,13 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Computation device: %s" % (device))
 
-    res_model_path = 'resnet_pytorch.pt'
-    class_file_path = 'classes.txt'
-
     # load classes (idx, strings)
-    with open(class_file_path, "rb") as fp:
+    with open(get_classes_file_path(), "rb") as fp:
         classes = pickle.load(fp)
 
     # load model
-    print("Load model: %s" % (res_model_path))
-    model_ft = torch.load(res_model_path)
+    print("Load model: %s" % (get_model_path()))
+    model_ft = torch.load(get_model_path())
     model_ft.eval()
     model_ft = model_ft.to(device)
 
@@ -70,7 +68,7 @@ if __name__ == '__main__':
 
         keyCode = cv2.waitKey(1)
         if keyCode == ord('q'):
-            break;
+            break
 
     cv_cap.release()
     cv2.destroyAllWindows()

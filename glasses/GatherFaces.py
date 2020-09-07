@@ -8,7 +8,7 @@ exit -> press 'q'
 
 import cv2
 import time
-from CommonTorchGlasses import CvFaceCapture
+from CommonGlasses import CvFaceCapture
 
 cv_video_input = cv2.VideoCapture(0)
 capture = CvFaceCapture(cv_video_input)
@@ -45,7 +45,7 @@ while(True):
 
     keyCode = cv2.waitKey(100)
     if keyCode == ord('q'):
-        break;
+        break
     if keyCode == ord('a'):
         addFaceToFile = not addFaceToFile
     if keyCode == ord('f'):

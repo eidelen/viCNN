@@ -13,15 +13,12 @@ from torch.utils.data import Dataset
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
 import time
 import os
 import copy
 import pickle
 
-from CommonTorchGlasses import get_evaluation_transform, get_training_transform
-
-plt.ion()   # interactive mode
+from CommonTorchGlasses import get_evaluation_transform, get_training_transform, get_classes_file_path, get_model_path
 
 def set_parameter_requires_grad(model, feature_extracting):
     if feature_extracting:
@@ -31,15 +28,19 @@ def set_parameter_requires_grad(model, feature_extracting):
 if __name__ == '__main__':
     print("PyTorch Version: ", torch.__version__)
     print("Torchvision Version: ", torchvision.__version__)
-    res_model_path = 'resnet_pytorch.pt'
-    class_file_path = 'classes.txt'
 
+    # use a pretrained model - if true, faster achieving good results
     use_pretrained_model = True
-    do_only_feature_extraction = False # if false, each layer of the CNN is adapting
+    # if false, each layer of the CNN is adapting. when true, only last layer is adapting
+    do_only_feature_extraction = False
+    # the batch size
     batch_size = 8
+    # number of epochs
     num_epochs = 3
+    # the learning rate
     learning_rate = 0.0006
 
+    # image input size - cannot be changed
     image_input_size = 224
 
     # load training and validation data set
@@ -63,15 +64,15 @@ if __name__ == '__main__':
         idx = validation_set.class_to_idx[cl]
         print("Validation: Class %s as idx %d, n=%d" % (cl, idx, validation_count[idx]))
 
-    print("Saving classes and indices: %s" % (class_file_path))
-    with open(class_file_path, "wb") as fp:
+    print("Saving classes and indices: %s" % (get_classes_file_path()))
+    with open(get_classes_file_path(), "wb") as fp:
         class_items = [(training_set.class_to_idx[cl], cl) for cl in training_set.classes]
         pickle.dump(class_items, fp)
 
     # load existing model if available, otherwise make it from scratch
-    if os.path.isfile(res_model_path):
-        print("Load existing model: %s" % (res_model_path))
-        model_ft = torch.load(res_model_path)
+    if os.path.isfile(get_model_path()):
+        print("Load existing model: %s" % (get_model_path()))
+        model_ft = torch.load(get_model_path())
         model_ft.eval()
     else:
         # load pretrained resnet model
@@ -171,8 +172,8 @@ if __name__ == '__main__':
     print('Training complete in {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
     print('Best val Acc: {:4f}'.format(best_acc))
 
-    # load best model weights
+    # load best model weights and save it
     model_ft.load_state_dict(best_model_wts)
-    print("Saving model: %s" % (res_model_path))
-    torch.save(model_ft, res_model_path)
+    print("Saving model: %s" % (get_model_path()))
+    torch.save(model_ft, get_model_path())
 
