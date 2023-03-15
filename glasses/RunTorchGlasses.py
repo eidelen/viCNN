@@ -11,7 +11,6 @@ from __future__ import print_function
 from __future__ import division
 import torch
 import torchvision
-from torchvision import datasets, models, transforms
 from PIL import Image
 import pickle
 import cv2
